@@ -30,7 +30,7 @@ export default function BlackFrame() {
                     y="0"
                     width={width}
                     height={height}
-                    fill="black"
+                    fill="rgba(0,0,0,0.4)"
                     mask="url(#mask)"
                 />
             </Svg>
