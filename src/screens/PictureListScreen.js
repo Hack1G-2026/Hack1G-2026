@@ -1,4 +1,6 @@
+import React, { useEffect, useState } from "react";
 import { FlatList, Image, StyleSheet, Text, View } from "react-native";
+import { getColors } from "react-native-image-colors";
 
 function formatDate(value) {
   if (!value) return "日付なし";
@@ -54,6 +56,8 @@ export default function PictureListScreen({
   route,
   pictures: managedPictures,
 }) {
+  const [extractedColors, setExtractedColors] = useState({}); // 各画像の色を保持
+
   const picturesFromRoute = route?.params?.pictures;
   const pictures =
     Array.isArray(picturesFromRoute) && picturesFromRoute.length > 0
@@ -62,10 +66,68 @@ export default function PictureListScreen({
         ? managedPictures
         : normalizePictures(route?.params);
 
+  // 画像から色を抽出する処理
+  useEffect(() => {
+    const fetchColors = async () => {
+      const colorMap = { ...extractedColors };
+      let updated = false;
+
+      for (const item of pictures) {
+        if (!item.uri || colorMap[item.id]) continue;
+
+        try {
+          // --- パスの整形処理を追加 ---
+          let imageUri = item.uri;
+          if (imageUri.startsWith('file:/') && !imageUri.startsWith('file:///')) {
+            imageUri = imageUri.replace('file:/', 'file:///');
+          }
+          // --------------------------
+
+          const result = await getColors(imageUri, {
+            fallback: "#12CEDB",
+            cache: true,
+            key: item.id,
+          });
+
+          let color;
+          if (result.platform === "android") {
+            color = result.dominant || result.average || "#12CEDB";
+          } else {
+            color = result.background || "#12CEDB";
+          }
+
+          colorMap[item.id] = color;
+          updated = true;
+        } catch (e) {
+          console.warn(`Color extraction failed for: ${item.uri}`, e);
+          // 失敗してもデフォルト色を入れて、何度も同じ画像で失敗し続けないようにする
+          colorMap[item.id] = "#12CEDB";
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        setExtractedColors(colorMap);
+      }
+    };
+
+    if (pictures.length > 0) {
+      fetchColors();
+    }
+  }, [pictures]);
+
   const renderItem = ({ item, index }) => {
+    // 抽出された色があれば適用、なければデフォルト色
+    const dynamicBackgroundColor = extractedColors[item.id] || "#12CEDB";
+
     return (
       <View style={styles.itemWrapper}>
-        <View style={styles.itemContainer}>
+        <View
+          style={[
+            styles.itemContainer,
+            { backgroundColor: dynamicBackgroundColor },
+          ]}
+        >
           <Image
             source={{ uri: item.uri }}
             style={styles.previewImage}
@@ -122,12 +184,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   itemContainer: {
-    backgroundColor: "#12CEDB",
+    // backgroundColor は動的に指定するため削除
     borderRadius: 8,
     padding: 8,
     alignItems: "center",
     aspectRatio: 1,
     justifyContent: "flex-start",
+    // 少し影をつけると抽出した色が馴染みやすくなります
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   previewImage: {
     width: "62%",
