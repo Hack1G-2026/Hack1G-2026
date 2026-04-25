@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     View,
     StyleSheet,
+    Dimensions,
 } from 'react-native';
 import {
     GestureHandlerRootView,
@@ -16,6 +17,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import BlackFrame from '../components/BlackFrame';
 import { removeBackground } from '../utils/removeBg';
+import { manipulateAsync } from 'expo-image-manipulator';
+
+const { width, height } = Dimensions.get('window');
 
 export default function CameraScreen() {
     const navigation = useNavigation();
@@ -39,39 +43,57 @@ export default function CameraScreen() {
     }
 
     async function takePicture() {
-        try {
-            setLoading(true);
+    try {
+        setLoading(true);
 
-            console.log("撮影開始");
-
-            if (!camera) {
-                console.log("cameraがnull");
-                setLoading(false);
-                return;
-            }
-
-            const photo = await camera.takePictureAsync();
-            console.log("撮影成功", photo.uri);
-
-            const resultUri = await removeBackground(photo.uri);
-            console.log("API結果", resultUri);
-
-            if (!resultUri) {
-                console.log("resultUriがnull");
-                setLoading(false);
-                return;
-            }
-
+        if (!camera) {
             setLoading(false);
-
-            console.log("遷移する");
-            navigation.navigate('Home', { image: resultUri });
-
-        } catch (e) {
-            console.error("エラー:", e);
-            setLoading(false);
+            return;
         }
+
+        const photo = await camera.takePictureAsync();
+
+        // 写真のサイズを取得
+        const photoWidth = photo.width;
+        const photoHeight = photo.height;
+
+        // 枠の位置を計算
+        const holeWidth = width * 0.8;
+        const holeHeight = width * 0.8;
+        const holeX = (width - holeWidth) / 2;
+        const holeY = (height - holeHeight) / 2.5;
+
+        // 画面サイズと実際の写真サイズの比率
+        const scaleX = photoWidth / width;
+        const scaleY = photoHeight / height;
+
+        // 切り取り
+        const cropped = await manipulateAsync(photo.uri, [
+            {
+                crop: {
+                    originX: holeX * scaleX,
+                    originY: holeY * scaleY,
+                    width: holeWidth * scaleX,
+                    height: holeHeight * scaleY,
+                },
+            },
+        ]);
+
+        const resultUri = await removeBackground(cropped.uri);
+
+        if (!resultUri) {
+            setLoading(false);
+            return;
+        }
+
+        setLoading(false);
+        navigation.navigate('Home', { image: resultUri });
+
+    } catch (e) {
+        console.error("エラー:", e);
+        setLoading(false);
     }
+}
 
     const onPanEvent = (event) => {
         const { translationY } = event.nativeEvent;
@@ -121,6 +143,9 @@ export default function CameraScreen() {
                         （※画面内に被写体以外のものは{"\n"}
                         入れないでください）
                     </Text>
+                    <Text style = { styles.camera_text2}>
+                        あなたの好きを写真に収める
+                    </Text>
                 </View>
 
                 <View style={styles.zoomContainer}>
@@ -155,12 +180,20 @@ const styles = StyleSheet.create({
     text: { color: 'white', fontSize: 18 },
     camera_text: {
         position: 'absolute',
-        transform: [
-            { translateX: -175 },
-            { translateY: 0 },
-        ],
+        top: -50,
+        left: -50,
+        color: 'white',
+        fontSize: 10,
+        textAlign: 'center',
+        alignSelf: 'center',
+    },
+    camera_text2: {
+        position: 'absolute',
+        top: 30,
         color: 'white',
         fontSize: 18,
+        textAlign: 'center',
+        alignSelf: 'center',
     },
     image: { width: 80, height: 80 },
 });

@@ -1,5 +1,4 @@
-import { Text, View, StyleSheet, Dimensions, Image } from 'react-native';
-import { useState } from 'react';
+import { Text, View, StyleSheet, Dimensions, Image, Pressable} from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,9 +16,20 @@ export default function HomeScreen({ route }) {
         />
       )}
       <Text style={styles.mes}>{message1}</Text>
+      <Pressable style = {({pressed}) => [
+        styles.button1,
+        { opacity: pressed ? 0.5 : 1}
+      ]} />
+      <Pressable style = {({pressed}) => [
+        styles.button2,
+        { opacity: pressed ? 0.5 : 1}
+      ]} />
+      <Pressable style = {({pressed}) => [
+        styles.button3,
+        { opacity: pressed ? 0.5 : 1}
+      ]} />
     </View>
   );
-
 }
 
 const styles = StyleSheet.create({
@@ -41,4 +51,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 50,
   },
+  button1: {
+    position: 'absolute',
+    bottom: 50,
+    backgroundColor: 'white',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  button2: {
+    position: 'absolute',
+    bottom: 50,
+    backgroundColor: 'white',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    right: 100,
+  },
+  button3: {
+    position: 'absolute',
+    bottom: 50,
+    backgroundColor: 'white',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    left: 100,
+  },
+  
 });
