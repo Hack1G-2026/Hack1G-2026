@@ -37,5 +37,17 @@ yarn-error.*
 *.tsbuildinfo
 
 # generated native folders
-/ios
-/android
+#/ios
+#/android
+
+android/local.properties
+android/.gradle/
+android/app/build/
+
+# APIキーが含まれるファイルを無視
+.env
+.env.local
+.env.common.local
+.env.development.local
+.env.test.local
+.env.production.local
