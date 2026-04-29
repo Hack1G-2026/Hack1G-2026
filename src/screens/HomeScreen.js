@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: footerBackgroundColor,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alighItems: 'center',
+    alignItems: 'center',
     borderRadius: 1000,
     overflow: 'hidden',
     borderWidth: 1,
@@ -205,7 +205,6 @@ leftUp: {
 group: {
   alignItems: 'center',
   justifyContent: 'center',
-  marginVertical: 0,
 },
 
 groupText: {
