@@ -9,8 +9,6 @@ import {
 } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import BlackFrame from "../components/BlackFrame";
-
-// --- 変更点: ライブラリのインポート ---
 import { removeBackground } from "@six33/react-native-bg-removal";
 
 export default function CameraScreen({ addPicture }) {
@@ -49,8 +47,7 @@ export default function CameraScreen({ addPicture }) {
       const photo = await camera.takePictureAsync();
       console.log("撮影成功", photo.uri);
 
-      // --- 変更点: デバイス内での背景透過処理 ---
-      // 第2引数にオプション（背景色など）を指定できますが、透過なら空でOKです
+      // 2. 背景透過処理
       const result = await removeBackground(photo.uri);
       console.log("背景透過完了", result);
 
@@ -60,26 +57,36 @@ export default function CameraScreen({ addPicture }) {
         return;
       }
 
-      // 新しい写真オブジェクトの作成
-      // idはHomeScreenのロジックで必要になるため、ここで生成するかaddPicture内で付与してください
+      // 3. 写真オブジェクト作成 & 登録
       const newPicture = {
-        id: Date.now().toString(), // HomeScreenのキーとして必要
         uri: result,
         createdAt: new Date().toISOString(),
       };
 
-      addPicture?.(newPicture);
+      // addPicture はApp.js側でidを付与して返さないため、
+      // ここで仮idを生成しつつaddPictureに渡す
+      const tempId = `${Date.now()}-temp`;
+      const pictureWithId = { ...newPicture, id: tempId };
+      addPicture?.(pictureWithId);
+
       setLoading(false);
 
-      console.log("Homeへ遷移");
-      navigation.navigate("Home", { image: result });
+      // 4. CreateStickerScreen へ遷移
+      //    image: 背景透過済みURI, pictureId: App.jsで採番されるidと合わせるため
+      //    App.jsのaddPictureがgeneratedIdを使っている場合、picturesリストから
+      //    最新のidを取得するか、ここではtempIdを渡してCreateStickerScreen側でuriだけ使う運用もOK
+      console.log("CreateStickerへ遷移");
+      navigation.navigate("CreateSticker", {
+        image: result,
+        pictureId: tempId,
+        createdAt: newPicture.createdAt,
+      });
     } catch (e) {
       console.error("エラー:", e);
       setLoading(false);
     }
   }
 
-  // --- (以下、既存のPanGestureHandlerやUI部分は変更なし) ---
   const onPanEvent = (event) => {
     const { translationY } = event.nativeEvent;
     let newZoom = baseZoom - translationY / 300;
@@ -134,7 +141,6 @@ export default function CameraScreen({ addPicture }) {
   );
 }
 
-// ... styles は変更なし
 const styles = StyleSheet.create({
   captureContainer: { position: "absolute", bottom: 150, alignSelf: "center" },
   textContainer: { position: "absolute", top: 150, alignSelf: "center" },
